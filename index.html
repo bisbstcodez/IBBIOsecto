@@ -76,6 +76,9 @@
   .row .meta span{color:var(--muted);font-size:12.5px}
   .row .meta span em{color:#c2ccd6;font-style:normal;font-weight:600;margin-right:6px}
   .row .meta .rownote{color:var(--muted);font-size:12px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .sector{cursor:pointer}
+  .sector:hover path{fill-opacity:1}
+  .row.sel{background:rgba(34,167,224,.16);box-shadow:inset 3px 0 0 var(--accent)}
   .rep{color:var(--muted);font-size:12px;flex:none;opacity:.75}
   .refresh{
     display:block;margin:18px auto 0;padding:11px 22px;border-radius:999px;border:0;cursor:pointer;
@@ -848,12 +851,20 @@ function occursOn(ev, date){
   return true;
 }
 
-function minToAngle(m){ return (((m%DAY)+DAY)%DAY)/DAY*360 - 90; }
-function angleToMin(deg){ var m=((deg+90)/360)*DAY; return ((m%DAY)+DAY)%DAY; }
+/* ---- DIAL WINDOW: show only part of the day, enlarged ---- */
+var WIN_START=420, WIN_END=1020;         // 7:00 AM to 5:00 PM (minutes)
+var WIN_SPAN=WIN_END-WIN_START;          // 600
+/* Map a clock-minute to fraction 0..1 across the window (clamped). */
+function winFrac(m){ var f=(m-WIN_START)/WIN_SPAN; return f<0?0:(f>1?1:f); }
+/* Is this minute inside the visible window at all? */
+function inWindow(m){ return m>=WIN_START-1 && m<=WIN_END+1; }
+function minToAngle(m){ return winFrac(m)*360 - 90; }
+function angleToMin(deg){ var f=((deg+90)%360)/360; return WIN_START + f*WIN_SPAN; }
 function polar(r,deg){ var a=deg*Math.PI/180; return [CX+r*Math.cos(a), CY+r*Math.sin(a)]; }
 function sectorPath(startMin,durMin,rIn,rOut){
-  var span = Math.min(durMin, DAY-0.1)/DAY*360;
-  var a0=minToAngle(startMin), a1=a0+span, large = span>180?1:0;
+  var s0=Math.max(startMin,WIN_START), s1=Math.min(startMin+durMin,WIN_END);
+  if(s1<=s0){ s1=s0+1; }
+  var a0=minToAngle(s0), a1=minToAngle(s1), span=a1-a0, large=span>180?1:0;
   var p1=polar(rOut,a0), p2=polar(rOut,a1), p3=polar(rIn,a1), p4=polar(rIn,a0);
   return "M"+p1[0].toFixed(2)+","+p1[1].toFixed(2)+
          "A"+rOut+","+rOut+" 0 "+large+" 1 "+p2[0].toFixed(2)+","+p2[1].toFixed(2)+
@@ -861,11 +872,12 @@ function sectorPath(startMin,durMin,rIn,rOut){
          "A"+rIn+","+rIn+" 0 "+large+" 0 "+p4[0].toFixed(2)+","+p4[1].toFixed(2)+"Z";
 }
 
-function angleToMin(deg){ var m=((deg+90)/360)*DAY; return ((m%DAY)+DAY)%DAY; }
+function angleToMin(deg){ var f=((deg+90)%360)/360; return WIN_START + f*WIN_SPAN; }
 function polar(r,deg){ var a=deg*Math.PI/180; return [CX+r*Math.cos(a), CY+r*Math.sin(a)]; }
 function sectorPath(startMin,durMin,rIn,rOut){
-  var span = Math.min(durMin, DAY-0.1)/DAY*360;
-  var a0=minToAngle(startMin), a1=a0+span, large = span>180?1:0;
+  var s0=Math.max(startMin,WIN_START), s1=Math.min(startMin+durMin,WIN_END);
+  if(s1<=s0){ s1=s0+1; }
+  var a0=minToAngle(s0), a1=minToAngle(s1), span=a1-a0, large=span>180?1:0;
   var p1=polar(rOut,a0), p2=polar(rOut,a1), p3=polar(rIn,a1), p4=polar(rIn,a0);
   return "M"+p1[0].toFixed(2)+","+p1[1].toFixed(2)+
          "A"+rOut+","+rOut+" 0 "+large+" 1 "+p2[0].toFixed(2)+","+p2[1].toFixed(2)+
@@ -875,8 +887,9 @@ function sectorPath(startMin,durMin,rIn,rOut){
 
 function polar(r,deg){ var a=deg*Math.PI/180; return [CX+r*Math.cos(a), CY+r*Math.sin(a)]; }
 function sectorPath(startMin,durMin,rIn,rOut){
-  var span = Math.min(durMin, DAY-0.1)/DAY*360;
-  var a0=minToAngle(startMin), a1=a0+span, large = span>180?1:0;
+  var s0=Math.max(startMin,WIN_START), s1=Math.min(startMin+durMin,WIN_END);
+  if(s1<=s0){ s1=s0+1; }
+  var a0=minToAngle(s0), a1=minToAngle(s1), span=a1-a0, large=span>180?1:0;
   var p1=polar(rOut,a0), p2=polar(rOut,a1), p3=polar(rIn,a1), p4=polar(rIn,a0);
   return "M"+p1[0].toFixed(2)+","+p1[1].toFixed(2)+
          "A"+rOut+","+rOut+" 0 "+large+" 1 "+p2[0].toFixed(2)+","+p2[1].toFixed(2)+
@@ -885,8 +898,9 @@ function sectorPath(startMin,durMin,rIn,rOut){
 }
 
 function sectorPath(startMin,durMin,rIn,rOut){
-  var span = Math.min(durMin, DAY-0.1)/DAY*360;
-  var a0=minToAngle(startMin), a1=a0+span, large = span>180?1:0;
+  var s0=Math.max(startMin,WIN_START), s1=Math.min(startMin+durMin,WIN_END);
+  if(s1<=s0){ s1=s0+1; }
+  var a0=minToAngle(s0), a1=minToAngle(s1), span=a1-a0, large=span>180?1:0;
   var p1=polar(rOut,a0), p2=polar(rOut,a1), p3=polar(rIn,a1), p4=polar(rIn,a0);
   return "M"+p1[0].toFixed(2)+","+p1[1].toFixed(2)+
          "A"+rOut+","+rOut+" 0 "+large+" 1 "+p2[0].toFixed(2)+","+p2[1].toFixed(2)+
@@ -895,7 +909,7 @@ function sectorPath(startMin,durMin,rIn,rOut){
 }
 
 function sectorTextTransform(s,d,r){
-  var mid=minToAngle(s+d/2), p=polar(r,mid), rot=mid+90;
+  var s0=Math.max(s,WIN_START), s1=Math.min(s+d,WIN_END), mid=minToAngle((s0+s1)/2), p=polar(r,mid), rot=mid+90;
   if(rot>90 && rot<270) rot-=180;
   return "translate("+p[0].toFixed(2)+","+p[1].toFixed(2)+") rotate("+rot.toFixed(2)+")";
 }
@@ -962,7 +976,7 @@ var _s=document.createElement("style");
 _s.textContent=".cell{position:relative;aspect-ratio:1;border-radius:50%;cursor:pointer;padding:2px;display:grid;place-items:center}.cell:hover .mini{transform:scale(1.08)}.cell.out{opacity:.4}.cell.sel{background:rgba(34,167,224,.16)}.mini{width:100%;height:100%;display:block;transition:transform .12s}.mnum{font-family:\'Rationale\',sans-serif;fill:#d4dde6;font-size:15px}.mnum.today{fill:var(--accent)}.mnum.out{fill:#78848f}.calhead div{text-align:center;font-size:11px;color:var(--muted);font-weight:600}";
 document.head.appendChild(_s);
 
-var state={ events:[], view:"day", viewDate:startOfToday(), calMonth:startOfToday() };
+var state={ events:[], view:"day", viewDate:startOfToday(), calMonth:startOfToday(), selected:null };
 var MIN_DUR=5;
 
 function eventsFor(date){
@@ -991,28 +1005,34 @@ function renderDial(){
   var nowMin=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
   var evs=eventsFor(state.viewDate), s=[];
   s.push('<circle cx="200" cy="200" r="'+R_OUTER+'" fill="var(--bezel)" stroke="var(--bezel-edge)" stroke-width="1"/>');
-  for(var i=0;i<96;i++){
-    var ang=i*(360/96)-90, hr=i/4, isHour=(i%4===0), inner, cls;
-    if(!isHour){ inner=R_TICK_IN+5; cls="tick"; }
-    else if(hr%6===0){ inner=152; cls="tick major t1"; }
-    else if(hr%3===0){ inner=155; cls="tick major t2"; }
-    else { inner=R_TICK_IN; cls="tick major"; }
-    var outR=isHour?R_TICK_OUT+4:R_TICK_OUT, o=polar(outR,ang), n=polar(inner,ang);
+  // ticks every 15 min across the visible window
+  for(var tm=WIN_START; tm<=WIN_END; tm+=15){
+    var ang=minToAngle(tm), onHour=(tm%60===0), inner, cls;
+    if(!onHour){ inner=R_TICK_IN+5; cls="tick"; }
+    else{
+      var hh=tm/60;
+      if(hh%6===0){ inner=152; cls="tick major t1"; }
+      else if(hh%3===0){ inner=155; cls="tick major t2"; }
+      else { inner=R_TICK_IN; cls="tick major"; }
+    }
+    var outR=onHour?R_TICK_OUT+4:R_TICK_OUT, o=polar(outR,ang), n=polar(inner,ang);
     s.push('<line class="'+cls+'" x1="'+o[0].toFixed(1)+'" y1="'+o[1].toFixed(1)+'" x2="'+n[0].toFixed(1)+'" y2="'+n[1].toFixed(1)+'"/>');
   }
-  for(var h=0;h<24;h+=3){ var a=h*15-90, pn=polar(R_NUM,a); s.push('<text class="hournum'+(h%6===0?' q':'')+'" x="'+pn[0].toFixed(1)+'" y="'+pn[1].toFixed(1)+'">'+h+'</text>'); }
+  // hour numerals every 2 hours within the window (12-hour labels)
+  for(var hm=WIN_START; hm<=WIN_END; hm+=120){
+    var a=minToAngle(hm), pn=polar(R_NUM,a), hr12=((hm/60)%12)||12;
+    s.push('<text class="hournum q" x="'+pn[0].toFixed(1)+'" y="'+pn[1].toFixed(1)+'">'+hr12+'</text>');
+  }
   s.push('<circle cx="200" cy="200" r="'+R_FACE+'" fill="var(--dial)"/>');
   for(var k=0;k<12;k++){ var sa=k*30-90, a1=polar(R_HUB+4,sa), a2=polar(R_FACE-2,sa); s.push('<line x1="'+a1[0].toFixed(1)+'" y1="'+a1[1].toFixed(1)+'" x2="'+a2[0].toFixed(1)+'" y2="'+a2[1].toFixed(1)+'" stroke="var(--spoke)" stroke-width="1"/>'); }
   RINGS.forEach(function(r){ s.push('<circle cx="200" cy="200" r="'+r.out+'" fill="none" stroke="var(--ring-guide)" stroke-width="1"/>'); });
   evs.forEach(function(ev){
-    var st=hmToMin(ev.start), du=Math.max(MIN_DUR,ev.durationMin), R=RINGS[Math.min(2,ev.ring||0)], fg=contrastOn(ev.color);
-    s.push('<g><path d="'+sectorPath(st,du,R.in,R.out)+'" fill="'+ev.color+'" fill-opacity=".92" stroke="'+ev.color+'" stroke-width="1"/>');
-    var span=Math.min(du,DAY2)/DAY2*360, rMid=R.in+(R.out-R.in)*0.55;
-    if(span>=12&&(R.out-R.in)>=24){ var mc=Math.max(3,Math.floor(span/2.4)), lbl=ev.label.length>mc?ev.label.slice(0,mc-1)+"\u2026":ev.label; s.push('<text class="seclabel" fill="'+fg+'" text-anchor="middle" dominant-baseline="central" transform="'+sectorTextTransform(st,du,rMid)+'">'+esc(lbl)+'</text>'); }
-    if(span>=8){ s.push('<text class="sectime" fill="'+fg+'" text-anchor="start" dominant-baseline="central" transform="'+edgeTextTransform(st,R.in+7)+'">'+esc(ev.start)+'</text>'); s.push('<text class="sectime" fill="'+fg+'" text-anchor="end" dominant-baseline="central" transform="'+edgeTextTransform(st+du,R.out-7)+'">'+esc(minToHM(st+du))+'</text>'); }
-    s.push('</g>');
+    if(!inWindow(hmToMin(ev.start)) && !inWindow(hmToMin(ev.start)+ev.durationMin)) return;
+    var st=hmToMin(ev.start), du=Math.max(MIN_DUR,ev.durationMin), R=RINGS[Math.min(2,ev.ring||0)];
+    var selected=(state.selected===ev.id);
+    s.push('<g class="sector'+(selected?' sel':'')+'" data-id="'+ev.id+'"><path d="'+sectorPath(st,du,R.in,R.out)+'" fill="'+ev.color+'" fill-opacity="'+(selected?'1':'.92')+'" stroke="'+(selected?'#fff':ev.color)+'" stroke-width="'+(selected?'2':'1')+'"/></g>');
   });
-  if(showLive){ var na=minToAngle(nowMin), tip=polar(R_FACE-4,na), tail=polar(R_HUB+2,na), dot=polar(R_FACE+12,na); s.push('<line class="nowhand" x1="'+tail[0].toFixed(1)+'" y1="'+tail[1].toFixed(1)+'" x2="'+tip[0].toFixed(1)+'" y2="'+tip[1].toFixed(1)+'"/>'); s.push('<circle class="nowdot" cx="'+dot[0].toFixed(1)+'" cy="'+dot[1].toFixed(1)+'" r="5.5"/>'); }
+  if(showLive && inWindow(nowMin)){ var na=minToAngle(nowMin), tip=polar(R_FACE-4,na), tail=polar(R_HUB+2,na), dot=polar(R_FACE+12,na); s.push('<line class="nowhand" x1="'+tail[0].toFixed(1)+'" y1="'+tail[1].toFixed(1)+'" x2="'+tip[0].toFixed(1)+'" y2="'+tip[1].toFixed(1)+'"/>'); s.push('<circle class="nowdot" cx="'+dot[0].toFixed(1)+'" cy="'+dot[1].toFixed(1)+'" r="5.5"/>'); }
   var hubTime=showLive?pad(now.getHours())+":"+pad(now.getMinutes()):"--:--";
   var hubDate=state.viewDate.toLocaleDateString(undefined,{weekday:"short"}).toLowerCase()+" "+state.viewDate.getDate();
   s.push('<circle cx="200" cy="200" r="'+R_HUB+'" fill="var(--dial)" stroke="var(--dial)" stroke-width="6"/>');
@@ -1026,8 +1046,8 @@ function renderList(){
   var el=document.getElementById("list");
   if(!evs.length){ el.innerHTML='<div class="empty"><b>Nothing scheduled</b>No class events on this day.</div>'; return; }
   el.innerHTML=evs.map(function(ev){
-    var st=hmToMin(ev.start), en=st+ev.durationMin, isNow=live&&nowMin>=st&&nowMin<en;
-    return '<div class="row'+(isNow?" live":"")+'">'+
+    var st=hmToMin(ev.start), en=st+ev.durationMin, isNow=live&&nowMin>=st&&nowMin<en, sel=(state.selected===ev.id);
+    return '<div class="row'+(isNow?" live":"")+(sel?" sel":"")+'" data-id="'+ev.id+'">'+
       '<div class="badge" style="background:'+ev.color+';color:'+contrastOn(ev.color)+'">'+esc(ev.label.trim().charAt(0).toUpperCase()||"?")+'</div>'+
       '<div class="meta"><b>'+esc(ev.label)+'</b><span><em>'+fmtDur(ev.durationMin)+'</em>'+esc(ev.start)+' \u2014 '+esc(minToHM(en))+'</span>'+
       (ev.note?'<div class="rownote">'+esc(ev.note)+'</div>':'')+'</div>'+
@@ -1086,6 +1106,26 @@ document.getElementById("refreshBtn").onclick=load;
 document.getElementById("refreshBtn2").onclick=load;
 
 render(); load();
+
+// Tap a sector on the dial -> highlight its row in the list and scroll to it.
+function selectEvent(id){
+  state.selected = (state.selected===id ? null : id);
+  renderDial(); renderList();
+  if(state.selected){
+    var row=document.querySelector('#list .row[data-id="'+state.selected+'"]');
+    if(row) row.scrollIntoView({behavior:"smooth", block:"nearest"});
+  }
+}
+document.getElementById("dial").addEventListener("click",function(e){
+  var g=e.target.closest(".sector");
+  if(g){ selectEvent(g.dataset.id); }
+  else { if(state.selected){ state.selected=null; renderDial(); renderList(); } }
+});
+// Tapping a list row also highlights the matching sector.
+document.getElementById("list").addEventListener("click",function(e){
+  var r=e.target.closest(".row[data-id]");
+  if(r) selectEvent(r.dataset.id);
+});
 setInterval(function(){ if(state.view==="day"&&isSameDay(state.viewDate,new Date())){ renderDial(); renderList(); } },30000);
 })();
 </script>
